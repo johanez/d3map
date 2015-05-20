@@ -1,0 +1,8 @@
+d3.csv("data/cities.csv", function(error, data) {
+  data.forEach(function(d){
+     svg.insert("path", ".foreground")
+    .datum({type: "Point", coordinates: [d['lon'], d['lat']]})
+    .attr("class", "point")
+    .attr("d", path);
+  });
+});
