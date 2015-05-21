@@ -6,12 +6,32 @@
 <script src="js/d3.v3.min.js"></script>
 <script src="js/topojson.v1.min.js"></script>
 <script src="js/queue.v1.min.js"></script>
+<script src="js/d3.geo.projection.v0.min.js"></script>
+<script src="http://d3js.org/d3.geo.polyhedron.v0.min.js"></script>
+
 </head>
 <style type="text/css">
-
-  .water {
-    fill: #FFFFFF;
+  body {
+    background: #fcfcfa;
   }
+
+  .fill {
+    fill: #fff;
+  }
+
+  .stroke {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 3px;
+  }
+
+  .graticule {
+    fill: none;
+    stroke: #fff;
+    stroke-width: .5px;
+    stroke-opacity: .5;
+  }
+
 
   .land {
     fill: #000000;
@@ -27,6 +47,8 @@
   .focused {
     fill: #33CC33;
   }
+
+
 
 select {
   position: absolute;
@@ -52,23 +74,45 @@ select {
 
 </style>
 <body>
+  <p class= "Myworld!">jj</p>
   <script>
 
-  var width = 600,
-  height = 500,
+  var width = 800,
+  height = 800,
   sens = 0.1,
   focused;
 
   //Setting projection
+  // var projection = d3.geo.aitoff()
+  //   .scale(100)
+  //   .translate([width / 2, height / 2])
+  //   .precision(.1);
 
-  var projection = d3.geo.orthographic()
-  .scale(245)
-  .rotate([0, 0])
-  .translate([width / 2, height / 2])
-  .clipAngle(90);
+/*  var projection = d3.geo.berghaus()
+      .rotate([20, -90])
+      .clipAngle(180 - 1e-3)
+      .scale(155)
+      .translate([width / 2, height * .55])
+      .precision(.1);*/
+
+  // var projection = d3.geo.polyhedron.waterman()
+  //     .rotate([20, 0])
+  //     .scale(118)
+  //     .translate([width / 2, height / 2])
+  //     .precision(.1);
+   var projection = d3.geo.orthographic()
+    .scale(245)
+    .rotate([0, 0])
+    .translate([width / 2, height / 2])
+    .clipAngle(90);
+
+  
 
   var path = d3.geo.path()
   .projection(projection);
+
+  var graticule = d3.geo.graticule();
+
 
   //SVG container
 
@@ -76,12 +120,15 @@ select {
   .attr("width", width)
   .attr("height", height);
 
+  var defs = svg.append("defs");
+
   //Adding water
 
-  svg.append("path")
-  .datum({type: "Sphere"})
-  .attr("class", "water")
-  .attr("d", path);
+  // svg.append("path")
+  // .datum({type: "Sphere"})
+  // .attr("class", "water")
+  // .attr("d", path);
+
 
   var countryTooltip = d3.select("body").append("div").attr("class", "countryTooltip"),
   countryList = d3.select("body").append("select").attr("name", "countries");
@@ -90,14 +137,17 @@ select {
   queue()
   .defer(d3.json, "data/world-110m.json")
   .defer(d3.tsv, "data/world-110m-country-names.tsv")
+  .defer(d3.csv, "data/cities.csv")
   .await(ready);
 
   //Main function
 
-  function ready(error, world, countryData) {
+  function ready(error, world, countryData, mpoints) {
 
     var countryById = {},
     countries = topojson.feature(world, world.objects.countries).features;
+    var land = topojson.feature(world, world.objects.land);
+
 
     //Adding countries to select
 
@@ -108,15 +158,38 @@ select {
       option.property("value", d.id);
     });
 
+    defs.append("path")
+        .datum({type: "Sphere"})
+        .attr("id", "sphere")
+        .attr("d", path);
 
+    defs.append("clipPath")
+        .attr("id", "clip")
+      .append("use")
+        .attr("xlink:href", "#sphere");
 
-    //Drawing countries on the globe
+    svg.append("use")
+        .attr("class", "stroke")
+        .attr("xlink:href", "#sphere");
+
+    svg.append("use")
+        .attr("class", "fill")
+        .attr("xlink:href", "#sphere");
+
+    svg.append("path")
+        .datum(graticule)
+        .attr("class", "graticule")
+        .attr("clip-path", "url(#clip)")
+        .attr("d", path);
+
+    // Drawing countries on the globe
 
     var world = svg.selectAll("path.land")
     .data(countries)
     .enter().append("path")
     .attr("class", "land")
     .attr("d", path)
+    .attr("clip-path", "url(#clip)")
 
     //Drag event
 
@@ -147,15 +220,36 @@ select {
       .style("top", (d3.event.pageY - 15) + "px");
     });
 
-    d3.csv("data/cities.csv", function(error, data) {
-      data.forEach(function(d){
+    mpoints.forEach(function(d){
         svg.insert("path", ".foreground")
-        .datum({type: "Point", coordinates: [d['lon'], d['lat']]})
-        .attr("class", "point")
-        .attr("d", path)
-        .style("fill", "red");
+          .datum({type: "Point", coordinates: [d['lon'], d['lat']]})
+          .attr("class", "point")
+          .attr("d", path)
+          .style("fill", "red")
+          .on("click", function(d){
+            var rotate = projection.rotate(),
+            p = d.coordinates;
+            console.log(rotate);
+            console.log(p);
+
+            (function transition() {
+              d3.transition()
+              .duration(2500)
+              .tween("rotate", function() {
+                var r = d3.interpolate(projection.rotate(), [-p[0], -p[1]]);
+                   return function(t) {
+                   projection.rotate(r(t));
+                   svg.selectAll("path").attr("d", path);
+                   //.classed("focused", function(d, i) { return d.id == focusedCountry.id ? focused = d : false; });
+                };
+              })
+            })();
+
+
+
+          });
       });
-    });
+
 
     //Country focus on option select
 
