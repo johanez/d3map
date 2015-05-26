@@ -119,8 +119,8 @@ select {
   var svg = d3.select("body").append("svg")
   .attr("width", width)
   .attr("height", height);
-  var displayt = d3.select("display");//.text();
-  console.log(displayt[0]);
+  var displayt = d3.select(".display");
+  console.log(displayt);
 
   var defs = svg.append("defs");
 
@@ -204,9 +204,6 @@ select {
       .attr("d", path)
       .attr("clip-path", "url(#clip)")
 
-   
-
-
 
     // ADD  points
 
@@ -221,7 +218,7 @@ select {
           var rotate = projection.rotate();
           // console.log(d);
           var p = d.geometry.coordinates;
-          displayt = d.properties.city;
+          displayt.text(d.properties.city);
           // console.log(p);
           (function transition() {
             d3.transition()

@@ -1,0 +1,75 @@
+{
+   "type": "FeatureCollection",
+   "features": [
+  {
+    "type": "Feature",
+    "geometry": {
+       "type": "Point",
+       "coordinates":  [ 5.66,51.97 ]
+    },
+    "properties": {
+    "code":"WAG",
+    "city":"Wageningen",
+    "country":"NL",
+    "company": "Wageningen University",
+    "position": "Research Assistant",
+    "summary": "Developing  land cover mapping methods for the EU Climate Change Initiative Land cover Project. http://www.esa-landcover-cci.org/"
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": {
+       "type": "Point",
+       "coordinates":  [ 178.442,-18.142 ]
+    },
+    "properties": {
+    "code":"SUV",
+    "city":"Suva",
+    "country":"Fiji",
+    "company": "Deutsche Gsesellschaft für Internationale Zusammenarbeit (GIZ)",
+    "position": "Intern",
+    "summary": "Developing of a reference database and validation concept for RS-based forest cover change products in Fiji."
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": {
+       "type": "Point",
+       "coordinates":  [ 83.36,17.91 ]
+    },
+    "properties": {
+    "code":"AND",
+    "city":"Anandapuram",
+    "country":"India",
+    "company": "Society for Education and Development",
+    "startDate": "2013-12-01",
+    "endDate": "2014-03-31",
+    "summary": "Developing of a reference database and validation concept for RS-based forest cover change products in Fiji."
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": {
+       "type": "Point",
+       "coordinates":  [ 13.41,52.52 ]
+    },
+    "properties": {
+    "code":"BER",
+    "city":"Berlin",
+    "country":"Germany"
+    }
+  },
+  {
+    "type": "Feature",
+    "geometry": {
+       "type": "Point",
+       "coordinates":  [ 8.67,49.399 ]
+    },
+    "properties": {
+    "code":"HED",
+    "city":"Heidelberg",
+    "country":"Germany"
+    }
+  }
+]
+}
