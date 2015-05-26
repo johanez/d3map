@@ -12,7 +12,7 @@
 </head>
 <style type="text/css">
   body {
-    background: #fcfcfa;
+    background: #eaeae7;
   }
 
   .fill {
@@ -59,7 +59,7 @@ select {
   box-shadow: inset 1px 1px 2px #ddd8dc;
 }
 
-.countryTooltip {
+.pointTooltip {
   position: absolute;
   display: none;
   pointer-events: none;
@@ -74,7 +74,7 @@ select {
 
 </style>
 <body>
-  <p class= "Myworld!">jj</p>
+  <p class= "display">jj</p>
   <script>
 
   var width = 800,
@@ -83,28 +83,28 @@ select {
   focused;
 
   //Setting projection
-  // var projection = d3.geo.aitoff()
-  //   .scale(100)
-  //   .translate([width / 2, height / 2])
-  //   .precision(.1);
+  var projection = d3.geo.aitoff()
+    .scale(100)
+    .translate([width / 2, height / 2])
+    .precision(.1);
 
-/*  var projection = d3.geo.berghaus()
-      .rotate([20, -90])
-      .clipAngle(180 - 1e-3)
-      .scale(155)
-      .translate([width / 2, height * .55])
-      .precision(.1);*/
+  // var projection = d3.geo.berghaus()
+  //     .rotate([20, -90])
+  //     .clipAngle(180 - 1e-3)
+  //     .scale(100)
+  //     .translate([width / 2, height * .55])
+  //     .precision(.1);
 
   // var projection = d3.geo.polyhedron.waterman()
   //     .rotate([20, 0])
   //     .scale(118)
   //     .translate([width / 2, height / 2])
   //     .precision(.1);
-   var projection = d3.geo.orthographic()
-    .scale(245)
-    .rotate([0, 0])
-    .translate([width / 2, height / 2])
-    .clipAngle(90);
+   // var projection = d3.geo.orthographic()
+   //  .scale(245)
+   //  .rotate([0, 0])
+   //  .translate([width / 2, height / 2])
+   //  .clipAngle(90);
 
   
 
@@ -119,6 +119,8 @@ select {
   var svg = d3.select("body").append("svg")
   .attr("width", width)
   .attr("height", height);
+  var displayt = d3.select("display");//.text();
+  console.log(displayt[0]);
 
   var defs = svg.append("defs");
 
@@ -130,20 +132,21 @@ select {
   // .attr("d", path);
 
 
-  var countryTooltip = d3.select("body").append("div").attr("class", "countryTooltip"),
+  var pointTooltip = d3.select("body").append("div").attr("class", "pointTooltip"),
   countryList = d3.select("body").append("select").attr("name", "countries");
 
 
   queue()
   .defer(d3.json, "data/world-110m.json")
   .defer(d3.tsv, "data/world-110m-country-names.tsv")
-  .defer(d3.csv, "data/cities.csv")
+  //.defer(d3.csv, "data/cities.csv")
+  .defer(d3.json, "data/mpoints.json")
   .await(ready);
 
   //Main function
 
   function ready(error, world, countryData, mpoints) {
-
+  
     var countryById = {},
     countries = topojson.feature(world, world.objects.countries).features;
     var land = topojson.feature(world, world.objects.land);
@@ -174,7 +177,17 @@ select {
 
     svg.append("use")
         .attr("class", "fill")
-        .attr("xlink:href", "#sphere");
+        .attr("xlink:href", "#sphere")
+           //Drag event
+        .call(d3.behavior.drag()
+          .origin(function() { var r = projection.rotate(); return {x: r[0] / sens, y: -r[1] / sens}; })
+          .on("drag", function() {
+            var rotate = projection.rotate();
+            projection.rotate([d3.event.x * sens, -d3.event.y * sens, rotate[2]]);
+            svg.selectAll("path.land").attr("d", path);
+            svg.selectAll("path.point").attr("d", path);
+            svg.selectAll(".focused").classed("focused", focused = false);
+        }));
 
     svg.append("path")
         .datum(graticule)
@@ -185,70 +198,69 @@ select {
     // Drawing countries on the globe
 
     var world = svg.selectAll("path.land")
-    .data(countries)
-    .enter().append("path")
-    .attr("class", "land")
-    .attr("d", path)
-    .attr("clip-path", "url(#clip)")
+      .data(countries)
+      .enter().append("path")
+      .attr("class", "land")
+      .attr("d", path)
+      .attr("clip-path", "url(#clip)")
 
-    //Drag event
-
-    .call(d3.behavior.drag()
-      .origin(function() { var r = projection.rotate(); return {x: r[0] / sens, y: -r[1] / sens}; })
-      .on("drag", function() {
-        var rotate = projection.rotate();
-        projection.rotate([d3.event.x * sens, -d3.event.y * sens, rotate[2]]);
-        svg.selectAll("path.land").attr("d", path);
-        svg.selectAll(".focused").classed("focused", focused = false);
-      }))
-
-    //Mouse events
-
-    .on("mouseover", function(d) {
-      countryTooltip.text(countryById[d.id])
-      .style("left", (d3.event.pageX + 7) + "px")
-      .style("top", (d3.event.pageY - 15) + "px")
-      .style("display", "block")
-      .style("opacity", 1);
-    })
-    .on("mouseout", function(d) {
-      countryTooltip.style("opacity", 0)
-      .style("display", "none");
-    })
-    .on("mousemove", function(d) {
-      countryTooltip.style("left", (d3.event.pageX + 7) + "px")
-      .style("top", (d3.event.pageY - 15) + "px");
-    });
-
-    mpoints.forEach(function(d){
-        svg.insert("path", ".foreground")
-          .datum({type: "Point", coordinates: [d['lon'], d['lat']]})
-          .attr("class", "point")
-          .attr("d", path)
-          .style("fill", "red")
-          .on("click", function(d){
-            var rotate = projection.rotate(),
-            p = d.coordinates;
-            console.log(rotate);
-            console.log(p);
-
-            (function transition() {
-              d3.transition()
-              .duration(2500)
-              .tween("rotate", function() {
-                var r = d3.interpolate(projection.rotate(), [-p[0], -p[1]]);
-                   return function(t) {
-                   projection.rotate(r(t));
-                   svg.selectAll("path").attr("d", path);
-                   //.classed("focused", function(d, i) { return d.id == focusedCountry.id ? focused = d : false; });
-                };
-              })
-            })();
+   
 
 
 
-          });
-      });
+    // ADD  points
+
+    var mpoints = svg.selectAll("path.point")
+        .data(mpoints.features)
+        .enter().append("path")
+        .attr("class", "point")
+        .attr("d", path)
+        .style("fill", "red")
+        .style("opacity", 0.5)
+        .on("click", function(d){
+          var rotate = projection.rotate();
+          // console.log(d);
+          var p = d.geometry.coordinates;
+          displayt = d.properties.city;
+          // console.log(p);
+          (function transition() {
+            d3.transition()
+            .duration(2500)
+            .tween("rotate", function() {
+              var r = d3.interpolate(projection.rotate(), [-p[0], -p[1]]);
+                 return function(t) {
+                 projection.rotate(r(t));
+                 svg.selectAll("path").attr("d", path);
+                 //.classed("focused", function(d, i) { return d.id == focusedCountry.id ? focused = d : false; });
+              };
+            })
+          })();
+         })
+        .on("mouseover", function(d){
+          console.log()
+          pointTooltip.text(d.properties.city)
+            .style("left", (d3.event.pageX + 7) + "px")
+            .style("top", (d3.event.pageY - 15) + "px")
+            .style("display", "block")
+            .style("opacity", 1);
+        })
+        .on("mouseout", function(d) {
+          pointTooltip.style("opacity", 0)
+          .style("display", "none");
+         })
+        .on("mousemove", function(d) {
+          pointTooltip.style("left", (d3.event.pageX + 7) + "px")
+          .style("top", (d3.event.pageY - 15) + "px");
+        });
+          // old: csv file
+          // mpoints.forEach(function(d){
+          // svg.insert("path", ".foreground")
+          // .datum({type: "Point", coordinates: [d['lon'], d['lat']]})
+          // .attr("class", "point")
+          // .attr("d", path)
+          // .style("fill", "red")
+          // .style("opacity", 0.5)
+          //});
 
 
     //Country focus on option select
